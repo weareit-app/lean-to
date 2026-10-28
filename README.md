@@ -1,0 +1,18 @@
+# lean-to
+
+General-purpose, Mathlib-compatible definitions and theorems, potentially upstreamable.
+
+Status: a new skeleton. The stack and checks are in place; the real functionality is still to be built.
+
+## Getting started
+
+```sh
+lake exe cache get
+./scripts/check.sh
+```
+
+`./scripts/check.sh` runs `lake build` and the skills-sync and decision-record checks (Node 24 runs the last two).
+
+## Licence
+
+- Repository: Apache-2.0.
