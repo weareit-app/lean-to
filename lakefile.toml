@@ -1,5 +1,5 @@
 name = "lean_to"
-defaultTargets = ["LeanTo"]
+defaultTargets = ["LeanTo", "LeanToTest"]
 
 [[require]]
 name = "mathlib"
@@ -8,3 +8,7 @@ rev = "v4.35.0"
 
 [[lean_lib]]
 name = "LeanTo"
+
+# Client tests: import `LeanTo` only, and compile as part of `lake build`.
+[[lean_lib]]
+name = "LeanToTest"

@@ -1,3 +1,3 @@
 module
 
-public import LeanTo.Basic
+public import LeanTo.Relation.FunctionGraph

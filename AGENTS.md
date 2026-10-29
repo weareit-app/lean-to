@@ -32,7 +32,7 @@ A change is done when `./scripts/check.sh` passes, its tests cover the behaviour
 
 ### Issue tracker
 
-Local Markdown files under `.scratch/`, until this repository uses GitHub Issues. See `docs/agents/issue-tracker.md`.
+GitHub Issues on `weareit-app/lean-to`, through the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
