@@ -11,3 +11,7 @@ Decided when the repository was generated (see its first commit).
 - Lean `leanprover/lean4:v4.35.0` with Mathlib `v4.35.0` (commit `56a005855ea17e0b0958f73ec801ae140b0a1679`), the factory's verified pair. Lean files use the module system (`module`, `public import`). Upgrading Lean or Mathlib is an explicit change made in this repository.
 - Depends on pinned Mathlib only; never on private research or learn-it.
 - Decisions live in this file; `docs/adr/` is not used, and `tools/decision-records/check-no-adr-folder.mjs` fails if it exists.
+
+## Tests
+
+- 2026-11-06: Tests live in a separate Lean library, `LeanToTest` (root `LeanToTest.lean`, one file per tested module under `LeanToTest/`), not in `LeanTo`. Importing `LeanTo` therefore never pulls in tests, as with Mathlib's `MathlibTest`. `lakefile.toml` lists both libraries in `defaultTargets`, so `lake build`, `./scripts/check.sh` and CI build the tests.

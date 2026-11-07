@@ -2,97 +2,148 @@ module
 
 public import Mathlib.CategoryTheory.Monoidal.OfHasFiniteProducts
 public import Mathlib.CategoryTheory.Monoidal.Braided.Basic
+public import Mathlib.CategoryTheory.Limits.Preserves.Finite
 public import Mathlib.CategoryTheory.Limits.Preserves.Shapes.BinaryProducts
 public import Mathlib.CategoryTheory.Limits.Preserves.Shapes.Terminal
 
 /-!
-# Functors preserving finite coproducts are braided monoidal
+# Functors and the cocartesian monoidal structure
 
 Give categories with an initial object and binary coproducts the cocartesian monoidal structure
-`(⨿, ⊥_)`: Mathlib's `monoidalOfHasFiniteCoproducts` and `symmetricOfHasFiniteCoproducts`. A
-functor that preserves binary coproducts and the initial object is then braided monoidal, with
-unit isomorphism `PreservesInitial.iso F` and tensorator the comparison isomorphism
-`PreservesColimitPair.iso F X Y : F X ⨿ F Y ≅ F (X ⨿ Y)`.
-
-This is the cocartesian counterpart of Mathlib's `Functor.Monoidal.ofChosenFiniteProducts` and
-`Functor.Braided.ofChosenFiniteProducts`, which do the same for finite products and
-`CartesianMonoidalCategory`. Mathlib has no cocartesian monoidal class, so the structure here is the
-one Mathlib puts on a category with finite coproducts as a local instance.
+`(⨿, ⊥_)`: Mathlib's `monoidalOfHasFiniteCoproducts` and `symmetricOfHasFiniteCoproducts`, used
+here as local instances. This file is the cocartesian counterpart of
+`Functor.OplaxMonoidal.ofChosenFiniteProducts`, `Functor.Monoidal.ofChosenFiniteProducts` and
+`Functor.Braided.ofChosenFiniteProducts`
+(`Mathlib/CategoryTheory/Monoidal/Cartesian/Basic.lean`).
 
 ## Main definitions
 
-* `LeanTo.coreMonoidalOfPreservesCoproducts F : F.CoreMonoidal`
-* `LeanTo.monoidalOfPreservesCoproducts F : F.Monoidal`
-* `LeanTo.braidedOfPreservesCoproducts F : F.Braided`
+* `Functor.LaxMonoidal.ofHasFiniteCoproducts F`: every functor is lax monoidal, with
+  `ε = initialComparison F` and `μ X Y = coprodComparison F X Y`.
+* `Functor.Monoidal.ofHasFiniteCoproducts F`: if `F` preserves finite coproducts, these maps are
+  isomorphisms, so `F` is monoidal.
+* `Functor.Braided.ofHasFiniteCoproducts F`: such an `F` is braided.
+
+None of these is an instance: as for the cartesian versions, an instance would create a diamond
+for the identity and for composites of functors.
+
+## Implementation notes
+
+Mathlib has no cocartesian analogue of `CartesianMonoidalCategory` (see the TODO in
+`Mathlib/CategoryTheory/Monoidal/OfHasFiniteProducts.lean`), so the monoidal structure is the one
+Mathlib puts on a category with finite coproducts. If Mathlib adds these declarations, delete
+them here.
 -/
 
 @[expose] public section
 
-namespace LeanTo
+namespace CategoryTheory.Functor
 
-open CategoryTheory Limits MonoidalCategory
+open Limits MonoidalCategory
 
 universe v₁ v₂ u₁ u₂
 
 variable {C : Type u₁} [Category.{v₁} C] [HasInitial C] [HasBinaryCoproducts C]
   {D : Type u₂} [Category.{v₂} D] [HasInitial D] [HasBinaryCoproducts D]
-  (F : C ⥤ D) [PreservesColimitsOfShape (Discrete WalkingPair) F]
-  [PreservesColimitsOfShape (Discrete PEmpty.{1}) F]
 
 attribute [local instance] monoidalOfHasFiniteCoproducts symmetricOfHasFiniteCoproducts
 
-instance : PreservesColimit (Functor.empty.{0} C) F := by
-  have := preservesColimitsOfShape_of_equiv
-    (Discrete.equivalence (Equiv.equivOfIsEmpty PEmpty.{1} PEmpty.{1})) F
-  infer_instance
+namespace LaxMonoidal
 
-/-- The comparison isomorphisms make a coproduct-preserving functor monoidal for the cocartesian
-monoidal structures. -/
-noncomputable def coreMonoidalOfPreservesCoproducts : F.CoreMonoidal where
-  εIso := (PreservesInitial.iso F).symm
-  μIso X Y := PreservesColimitPair.iso F X Y
-  μIso_hom_natural_left f X' := by
-    refine coprod.hom_ext ?_ ?_ <;>
-      simp [PreservesColimitPair.iso_hom, -Functor.map_comp, ← Functor.map_comp]
-  μIso_hom_natural_right X' f := by
-    refine coprod.hom_ext ?_ ?_ <;>
-      simp [PreservesColimitPair.iso_hom, -Functor.map_comp, ← Functor.map_comp]
+/-- Any functor between categories with finite coproducts is lax monoidal for the cocartesian
+monoidal structures, with unit `initialComparison F` and tensorator `coprodComparison F`.
+
+This is not made an instance because it would create a diamond for the lax monoidal structure on
+the identity and composition of functors. -/
+@[instance_reducible]
+noncomputable def ofHasFiniteCoproducts (F : C ⥤ D) : F.LaxMonoidal where
+  ε := initialComparison F
+  μ X Y := coprodComparison F X Y
+  μ_natural_left f X := by
+    refine coprod.hom_ext ?_ ?_ <;> simp [-Functor.map_comp, ← Functor.map_comp]
+  μ_natural_right X g := by
+    refine coprod.hom_ext ?_ ?_ <;> simp [-Functor.map_comp, ← Functor.map_comp]
   associativity X Y Z := by
     refine coprod.hom_ext (coprod.hom_ext ?_ ?_) ?_ <;>
-      simp [PreservesColimitPair.iso_hom, -Functor.map_comp, ← Functor.map_comp,
-        monoidalOfHasFiniteCoproducts.associator_hom]
+      simp [-Functor.map_comp, ← Functor.map_comp, monoidalOfHasFiniteCoproducts.associator_hom]
   left_unitality X := by
-    refine coprod.hom_ext ?_ ?_
-    · exact initial.hom_ext _ _
-    · simp [PreservesColimitPair.iso_hom, -Functor.map_comp, ← Functor.map_comp,
-        monoidalOfHasFiniteCoproducts.leftUnitor_hom, coprod.inr_desc]
+    refine coprod.hom_ext (initial.hom_ext _ _) ?_
+    simp [-Functor.map_comp, ← Functor.map_comp, monoidalOfHasFiniteCoproducts.leftUnitor_hom,
+      coprod.inr_desc]
   right_unitality X := by
-    refine coprod.hom_ext ?_ ?_
-    · simp [PreservesColimitPair.iso_hom, -Functor.map_comp, ← Functor.map_comp,
-        monoidalOfHasFiniteCoproducts.rightUnitor_hom, coprod.inl_desc]
-    · exact initial.hom_ext _ _
+    refine coprod.hom_ext ?_ (initial.hom_ext _ _)
+    simp [-Functor.map_comp, ← Functor.map_comp, monoidalOfHasFiniteCoproducts.rightUnitor_hom,
+      coprod.inl_desc]
 
-/-- The tensorator is the coproduct comparison isomorphism. -/
-theorem coreMonoidalOfPreservesCoproducts_μIso (X Y : C) :
-    (coreMonoidalOfPreservesCoproducts F).μIso X Y = PreservesColimitPair.iso F X Y := rfl
+variable (F : C ⥤ D)
 
-/-- The unit isomorphism is the initial-object comparison isomorphism. -/
-theorem coreMonoidalOfPreservesCoproducts_εIso :
-    (coreMonoidalOfPreservesCoproducts F).εIso = (PreservesInitial.iso F).symm := rfl
+@[simp]
+lemma ofHasFiniteCoproducts_ε :
+    letI := ofHasFiniteCoproducts F
+    ε F = initialComparison F := rfl
 
-/-- A coproduct-preserving functor is monoidal for the cocartesian monoidal structures. -/
-@[instance_reducible] noncomputable def monoidalOfPreservesCoproducts : F.Monoidal :=
-  (coreMonoidalOfPreservesCoproducts F).toMonoidal
+@[simp]
+lemma ofHasFiniteCoproducts_μ (X Y : C) :
+    letI := ofHasFiniteCoproducts F
+    μ F X Y = coprodComparison F X Y := rfl
 
-/-- **A coproduct-preserving functor is braided monoidal** for the cocartesian symmetric monoidal
-structures. -/
-@[instance_reducible] noncomputable def braidedOfPreservesCoproducts : F.Braided :=
-  letI := monoidalOfPreservesCoproducts F
+end LaxMonoidal
+
+namespace Monoidal
+
+open LaxMonoidal OplaxMonoidal
+
+variable (F : C ⥤ D) [PreservesFiniteCoproducts F]
+
+/-- A functor preserving finite coproducts is monoidal for the cocartesian monoidal structures:
+the comparison maps of `Functor.LaxMonoidal.ofHasFiniteCoproducts` are isomorphisms.
+
+This is not made an instance because it would create a diamond for the monoidal structure on the
+identity and composition of functors. -/
+@[instance_reducible]
+noncomputable def ofHasFiniteCoproducts : F.Monoidal :=
+  letI := LaxMonoidal.ofHasFiniteCoproducts F
+  have : IsIso (ε F) := inferInstanceAs (IsIso (initialComparison F))
+  have (X Y : C) : IsIso (μ F X Y) := inferInstanceAs (IsIso (coprodComparison F X Y))
+  .ofLaxMonoidal F
+
+@[simp]
+lemma ofHasFiniteCoproducts_ε :
+    letI := ofHasFiniteCoproducts F
+    ε F = initialComparison F := rfl
+
+@[simp]
+lemma ofHasFiniteCoproducts_μ (X Y : C) :
+    letI := ofHasFiniteCoproducts F
+    μ F X Y = coprodComparison F X Y := rfl
+
+@[simp]
+lemma ofHasFiniteCoproducts_η :
+    letI := ofHasFiniteCoproducts F
+    η F = CategoryTheory.inv (initialComparison F) := rfl
+
+@[simp]
+lemma ofHasFiniteCoproducts_δ (X Y : C) :
+    letI := ofHasFiniteCoproducts F
+    δ F X Y = CategoryTheory.inv (coprodComparison F X Y) := rfl
+
+end Monoidal
+
+namespace Braided
+
+/-- A functor preserving finite coproducts is braided for the cocartesian symmetric monoidal
+structures.
+
+This is not made an instance because it would create a diamond for the monoidal structure on the
+identity and composition of functors. -/
+@[instance_reducible]
+noncomputable def ofHasFiniteCoproducts (F : C ⥤ D) [PreservesFiniteCoproducts F] :
+    F.Braided :=
+  letI := Monoidal.ofHasFiniteCoproducts F
   { braided := fun X Y => by
-      change ((coreMonoidalOfPreservesCoproducts F).μIso X Y).hom ≫ _ = _ ≫
-        ((coreMonoidalOfPreservesCoproducts F).μIso Y X).hom
       refine coprod.hom_ext ?_ ?_ <;>
-        simp [coreMonoidalOfPreservesCoproducts, PreservesColimitPair.iso_hom,
-          -Functor.map_comp, ← Functor.map_comp] }
+        simp [-Functor.map_comp, ← Functor.map_comp] }
 
-end LeanTo
+end Braided
+
+end CategoryTheory.Functor
